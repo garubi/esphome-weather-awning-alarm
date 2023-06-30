@@ -1,0 +1,155 @@
+substitutions:
+  name: meteotendasole_1_0
+  friendly_name: "Meteo Tenda Patio"
+
+esphome:
+  name: $name
+  friendly_name: $friendly_name
+  
+esp32:
+  board: esp32dev
+  framework:
+    type: arduino
+
+# Enable logging
+logger:
+
+<<: !include network.yaml
+
+# Enable Home Assistant API
+api:
+  encryption:
+    key: !secret encryption_key
+
+ota:
+  password: !secret ota_password
+
+
+captive_portal:
+
+sensor:
+  - platform: pulse_meter
+    pin:
+      # Don't forget to add a pulling resistor, see README
+      number: GPIO13
+      mode: INPUT
+    id: wind_speed
+    unit_of_measurement: 'm/s'
+    name: "${friendly_name} wind speed"
+    icon: 'mdi:weather-windy'
+    internal_filter: 13us
+    timeout: 5s
+    filters:
+      - multiply: 0.005560619
+      - sliding_window_moving_average:
+          window_size: 20
+          send_every: 20
+
+  - platform: copy
+    name: '${friendly_name} wind speed average'
+    icon: 'mdi:weather-windy'
+    id: wind_speed_avg
+    source_id: wind_speed
+    unit_of_measurement: 'm/s'
+    filters:
+      - throttle_average: 5s  
+    
+  - platform: copy
+    name: '${friendly_name} wind speed (km/h)'
+    id: wind_speed_kmh
+    source_id: wind_speed
+    unit_of_measurement: 'km/h'
+    icon: 'mdi:weather-windy'
+    filters:
+      - multiply: 3.6
+
+  - platform: copy
+    name: '${friendly_name} wind speed average (km/h)'
+    icon: 'mdi:weather-windy'
+    id: wind_speed_kmh_avg
+    source_id: wind_speed_avg
+    unit_of_measurement: 'km/h'
+    filters:
+      - multiply: 3.6
+    
+  - platform: pulse_counter
+    pin:
+      # Don't forget to add a pulling resistor, see README
+      number: GPIO14
+      mode: INPUT
+    unit_of_measurement: 'mm'
+    name: "${friendly_name} rain gauge"
+    icon: 'mdi:weather-rainy'
+    id: rain_gauge
+    internal: true
+    count_mode:
+      rising_edge: DISABLE
+      falling_edge: INCREMENT
+    internal_filter: 13us
+    update_interval: 60s
+    filters:
+      # Each 0.011" (0.2794mm) of rain causes one momentary contact closure
+      - multiply: 0.2794
+    accuracy_decimals: 4
+
+  - platform: integration
+    name: "${friendly_name} rainfall per min"
+    id: rain_per_min
+    time_unit: min
+    unit_of_measurement: 'mm'
+    icon: 'mdi:weather-rainy'
+    sensor: rain_gauge
+
+  - platform: total_daily_energy
+    name: "${friendly_name} total daily rain"
+    power_id: rain_gauge
+    unit_of_measurement: 'mm'
+    icon: 'mdi:weather-rainy'
+    # x60 To convert to aggregated rain amount
+    filters:
+      - multiply: 60
+
+  # - platform: sun
+  #   name: "${friendly_name} Sun elevation"
+  #   type: elevation
+  #   update_interval: 120s
+
+  # - platform: sun
+  #   name: "${friendly_name} Sun azimuth"
+  #   type: azimuth
+  #   update_interval: 120s
+
+text_sensor:
+  # - platform: template
+  #   name: "${friendly_name} wind cardinal direction"
+  #   id: wind_dir_card
+
+  # - platform: sun
+  #   name: "${friendly_name} next sunrise"
+  #   type: sunrise
+  #   update_interval: 4h
+  # - platform: sun
+  #   name: "${friendly_name} next sunset"
+  #   type: sunset
+  #   update_interval: 4h
+
+  - platform: template
+    name: '${friendly_name} Beaufort wind scale'
+    icon: 'mdi:tailwind'
+    id: wind_scale
+    update_interval: never
+
+  - platform: template
+    name: '${friendly_name} Beaufort wind scale code'
+    icon: 'mdi:tailwind'
+    id: wind_scale_code
+
+interval:
+  - interval: 60s
+    then:
+      - sensor.integration.reset: rain_per_min
+
+# Enable time component to reset energy at midnight
+time:
+  - platform: sntp
+    timezone: "Europe/Paris"    
