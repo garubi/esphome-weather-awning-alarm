@@ -24,18 +24,17 @@ api:
 ota:
   password: !secret ota_password
 
-
 captive_portal:
 
 sensor:
+  # ANEMOMETER #######################################################
   - platform: pulse_meter
     pin:
-      # Don't forget to add a pulling resistor, see README
       number: GPIO13
       mode: INPUT
     id: wind_speed
     unit_of_measurement: 'm/s'
-    name: "${friendly_name} wind speed"
+    name: "${friendly_name} wind speed (m/s)"
     icon: 'mdi:weather-windy'
     internal_filter: 13us
     timeout: 5s
@@ -46,7 +45,7 @@ sensor:
           send_every: 20
 
   - platform: copy
-    name: '${friendly_name} wind speed average'
+    name: '${friendly_name} wind speed average  (m/s)'
     icon: 'mdi:weather-windy'
     id: wind_speed_avg
     source_id: wind_speed
@@ -71,10 +70,10 @@ sensor:
     unit_of_measurement: 'km/h'
     filters:
       - multiply: 3.6
-    
+
+  # RAIN GAUGE #######################################################
   - platform: pulse_counter
     pin:
-      # Don't forget to add a pulling resistor, see README
       number: GPIO14
       mode: INPUT
     unit_of_measurement: 'mm'
@@ -109,30 +108,7 @@ sensor:
     filters:
       - multiply: 60
 
-  # - platform: sun
-  #   name: "${friendly_name} Sun elevation"
-  #   type: elevation
-  #   update_interval: 120s
-
-  # - platform: sun
-  #   name: "${friendly_name} Sun azimuth"
-  #   type: azimuth
-  #   update_interval: 120s
-
 text_sensor:
-  # - platform: template
-  #   name: "${friendly_name} wind cardinal direction"
-  #   id: wind_dir_card
-
-  # - platform: sun
-  #   name: "${friendly_name} next sunrise"
-  #   type: sunrise
-  #   update_interval: 4h
-  # - platform: sun
-  #   name: "${friendly_name} next sunset"
-  #   type: sunset
-  #   update_interval: 4h
-
   - platform: template
     name: '${friendly_name} Beaufort wind scale'
     icon: 'mdi:tailwind'
