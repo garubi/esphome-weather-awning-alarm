@@ -1,6 +1,6 @@
 substitutions:
-  name: meteotendasole_1_0
-  friendly_name: "Meteo Tenda Patio"
+  name: meteotendasole-1-0
+  friendly_name: "Meteo Tenda"
 
 esphome:
   name: $name
