@@ -30,10 +30,10 @@ sensor:
   - platform: pulse_meter
     pin:
       number: GPIO13
-      mode: INPUT
+      mode: INPUT_PULLUP
     id: wind_speed
     unit_of_measurement: 'm/s'
-    name: "${friendly_name} wind speed (m/s)"
+    name: '${friendly_name} wind speed (m/s)'
     icon: 'mdi:weather-windy'
     internal_filter: 13us
     timeout: 5s
@@ -74,7 +74,7 @@ sensor:
   - platform: pulse_counter
     pin:
       number: GPIO14
-      mode: INPUT
+      mode: INPUT_PULLUP
     unit_of_measurement: 'mm'
     name: "${friendly_name} rain gauge"
     icon: 'mdi:weather-rainy'
