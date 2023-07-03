@@ -27,6 +27,9 @@ captive_portal:
 
 sensor:
   # ANEMOMETER #######################################################
+  # Circumference in meter: radius (meters ) * 2 * 3.14 = 0.05 * 2 * 3.14 = 0,314 m
+  # Rotations per seconds: pulses /60 (this is because the pulse_meter counts the pulses in one minute)
+  # Wind speed (meters per second): Circumference in meter * Rotations per seconds = 0,314 / 60 * pulses = 
   - platform: pulse_meter
     pin:
       number: GPIO13
@@ -38,7 +41,7 @@ sensor:
     internal_filter: 13us
     timeout: 5s
     filters:
-      - multiply: 0.005560619
+      - multiply: 0.005233333
       - sliding_window_moving_average:
           window_size: 20
           send_every: 20
