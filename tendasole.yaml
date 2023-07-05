@@ -18,8 +18,7 @@ logger:
 
 # Enable Home Assistant API
 api:
-  encryption:
-    key: !secret encryption_key
+  password: !secret api_password
 
 ota:
   password: !secret ota_password
@@ -28,24 +27,27 @@ captive_portal:
 
 sensor:
   # ANEMOMETER #######################################################
+  # Circumference in meter: radius (meters ) * 2 * 3.14 = 0.05 * 2 * 3.14 = 0,314 m
+  # Rotations per seconds: pulses /60 (this is because the pulse_meter counts the pulses in one minute)
+  # Wind speed (meters per second): Circumference in meter * Rotations per seconds = 0,314 / 60 * pulses = 
   - platform: pulse_meter
     pin:
       number: GPIO13
-      mode: INPUT
+      mode: INPUT_PULLUP
     id: wind_speed
     unit_of_measurement: 'm/s'
-    name: "${friendly_name} wind speed (m/s)"
+    name: '${friendly_name} wind speed (m/s)'
     icon: 'mdi:weather-windy'
     internal_filter: 13us
     timeout: 5s
     filters:
-      - multiply: 0.005560619
+      - multiply: 0.005233333
       - sliding_window_moving_average:
-          window_size: 20
-          send_every: 20
+          window_size: 10
+          send_every: 5
 
   - platform: copy
-    name: '${friendly_name} wind speed average  (m/s)'
+    name: '${friendly_name} wind speed 5s average  (m/s)'
     icon: 'mdi:weather-windy'
     id: wind_speed_avg
     source_id: wind_speed
@@ -63,7 +65,7 @@ sensor:
       - multiply: 3.6
 
   - platform: copy
-    name: '${friendly_name} wind speed average (km/h)'
+    name: '${friendly_name} wind speed 5s average (km/h)'
     icon: 'mdi:weather-windy'
     id: wind_speed_kmh_avg
     source_id: wind_speed_avg
@@ -75,7 +77,7 @@ sensor:
   - platform: pulse_counter
     pin:
       number: GPIO14
-      mode: INPUT
+      mode: INPUT_PULLUP
     unit_of_measurement: 'mm'
     name: "${friendly_name} rain gauge"
     icon: 'mdi:weather-rainy'
