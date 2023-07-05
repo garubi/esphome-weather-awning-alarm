@@ -43,11 +43,11 @@ sensor:
     filters:
       - multiply: 0.005233333
       - sliding_window_moving_average:
-          window_size: 20
-          send_every: 20
+          window_size: 10
+          send_every: 5
 
   - platform: copy
-    name: '${friendly_name} wind speed average  (m/s)'
+    name: '${friendly_name} wind speed 5s average  (m/s)'
     icon: 'mdi:weather-windy'
     id: wind_speed_avg
     source_id: wind_speed
@@ -65,7 +65,7 @@ sensor:
       - multiply: 3.6
 
   - platform: copy
-    name: '${friendly_name} wind speed average (km/h)'
+    name: '${friendly_name} wind speed 5s average (km/h)'
     icon: 'mdi:weather-windy'
     id: wind_speed_kmh_avg
     source_id: wind_speed_avg
