@@ -42,7 +42,7 @@ esphome:
     then:
       - script.execute: test_resistance
       - script.execute: measure_loop
-      - script.execute: flashing
+      # - script.execute: flashing
 
 esp32:
   board: esp32dev
