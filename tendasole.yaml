@@ -63,6 +63,9 @@ ota:
 
 captive_portal:
 
+dallas:
+  - pin: GPIO32
+
 globals:
   - id: measure_delay
     type: int
@@ -273,6 +276,10 @@ binary_sensor:
     device_class: moisture
 
 sensor:
+  - platform: dallas
+    address: 0x1C0000031EDD2A28
+    name: "Temperature"
+
   - platform: adc
     id: source_sensor
     pin: GPIO33
