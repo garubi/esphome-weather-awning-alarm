@@ -283,7 +283,7 @@ sensor:
   - platform: adc
     id: source_sensor
     pin: GPIO33
-    name: ADC
+    name: "Rain sensor ADC"
     attenuation: 11db
     internal: true
 
