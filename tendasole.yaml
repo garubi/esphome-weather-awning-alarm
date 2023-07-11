@@ -456,7 +456,7 @@ switch:
     name: "${friendly_name} resistance bias"
     icon: "mdi:power"
     pin:
-      number: GPIO19
+      number: GPIO27
       mode: OUTPUT
       
 interval:
