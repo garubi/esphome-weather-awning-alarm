@@ -277,7 +277,7 @@ binary_sensor:
 
 sensor:
   - platform: dallas
-    address: 0x1C0000031EDD2A28
+    address: 0xf301205f5f377328
     name: "Temperature"
 
   - platform: adc
