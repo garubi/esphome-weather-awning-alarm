@@ -7,7 +7,7 @@ substitutions:
 
   # Skip the value not in the range
   min_resistance: "1000"
-  max_resistance: "500000"
+  max_resistance: "400000"
 
   # Value of the resistance at which a significant change is considered
   # to occur
@@ -18,13 +18,13 @@ substitutions:
   dry_detection_threshold: "4000"
 
   # When booting, if the resistance is lower this value, assume sensor is wet
-  wet_resistance_when_booting: "50000"
+  wet_resistance_when_booting: "7200"
 
   # +------------------------------+
   # | Delay between 2 rain measure |
   # +------------------------------+
   # In dry mode
-  measure_interval_dry: "5000"
+  measure_interval_dry: "5000" # 5 seconds
 
   # In wet mode
   # Must be large enough not to damage the tracks prematurely
