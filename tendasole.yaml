@@ -470,4 +470,4 @@ interval:
   # it's essential for the Time sntp component to run
 time:
   - platform: sntp
-    timezone: "Europe/Rome"
+    timezone: "Europe/Paris"    
