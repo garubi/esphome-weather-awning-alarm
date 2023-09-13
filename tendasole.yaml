@@ -1,5 +1,5 @@
 substitutions:
-  name: meteotendasole-1-1
+  name: meteotendasole-1-2
   friendly_name: "Meteo Tenda"
   resistor_value: "9.868kOhm"
 
