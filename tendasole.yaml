@@ -427,6 +427,7 @@ sensor:
       - multiply: 0.2794
     accuracy_decimals: 4
 
+
   - platform: integration
     name: "${friendly_name} rainfall per min"
     id: rain_per_min
@@ -465,6 +466,8 @@ interval:
       - sensor.integration.reset: rain_per_min
 
 # Enable time component to reset energy at midnight
+  # if you use a static IP (i.e. static_ip), be sure tu set the DNS address too (is usually the same as the gateway) dns1: XXX.XXX.XXX.XXX : 
+  # it's essential for the Time sntp component to run
 time:
   - platform: sntp
-    timezone: "Europe/Paris"    
+    timezone: "Europe/Rome"
