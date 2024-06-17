@@ -1,6 +1,7 @@
 substitutions:
   name: meteotendasole-2-0
   friendly_name: "Meteo Tenda"
+  loc: "Roof"
 
 esphome:
   name: $name
@@ -25,60 +26,87 @@ ota:
 
 captive_portal:
 
+# Enable Dallas temperature probe
 dallas:
   - pin: GPIO32
 
 sensor:
+# ------------------------------------------------------------------------------
+# Temperature
+# ------------------------------------------------------------------------------
   - platform: dallas
     address: 0xf301205f5f377328
     name: "Temperature"
+
+# ------------------------------------------------------------------------------
+# Wind Speed
+# ------------------------------------------------------------------------------
+  - platform: pulse_meter
+    pin: 
+      number: GPIO13
+      mode: INPUT_PULLUP
+    name: '${loc} Windspeed Meter'
+    icon: 'mdi:weather-windy'
+    id: wind_meter
+    device_class: "wind_speed"
+    state_class: "measurement"
+    unit_of_measurement: 'm/s'
+    accuracy_decimals: 1
+    timeout: 2s # Default 5s
+    filters:
+      - multiply: 0.005233333
+      - throttle_average: 2s # Send average windspeed every 2 seconds, this
+                             # seems to be the consensus on weather forums
+                             # for recording this data.
+                             # https://www.wxforum.net/index.php?topic=41489.0
+    # internal_filter: 13us
 
   # ANEMOMETER #######################################################
   # Circumference in meter: radius (meters ) * 2 * 3.14 = 0.05 * 2 * 3.14 = 0,314 m
   # Rotations per seconds: pulses /60 (this is because the pulse_meter counts the pulses in one minute)
   # Wind speed (meters per second): Circumference in meter * Rotations per seconds = 0,314 / 60 * pulses = 
-  - platform: pulse_meter
-    pin:
-      number: GPIO13
-      mode: INPUT_PULLUP
-    id: wind_speed
-    unit_of_measurement: 'm/s'
-    name: '${friendly_name} wind speed (m/s)'
-    icon: 'mdi:weather-windy'
-    internal_filter: 13us
-    timeout: 5s
-    filters:
-      - multiply: 0.005233333
-      - sliding_window_moving_average:
-          window_size: 10
-          send_every: 5
+  # - platform: pulse_meter
+  #   pin:
+  #     number: GPIO13
+  #     mode: INPUT_PULLUP
+  #   id: wind_speed
+  #   unit_of_measurement: 'm/s'
+  #   name: '${friendly_name} wind speed (m/s)'
+  #   icon: 'mdi:weather-windy'
+  #   internal_filter: 13us
+  #   timeout: 5s
+  #   filters:
+  #     - multiply: 0.005233333
+  #     - sliding_window_moving_average:
+  #         window_size: 10
+  #         send_every: 5
 
-  - platform: copy
-    name: '${friendly_name} wind speed 5s average  (m/s)'
-    icon: 'mdi:weather-windy'
-    id: wind_speed_avg
-    source_id: wind_speed
-    unit_of_measurement: 'm/s'
-    filters:
-      - throttle_average: 5s  
+  # - platform: copy
+  #   name: '${friendly_name} wind speed 5s average  (m/s)'
+  #   icon: 'mdi:weather-windy'
+  #   id: wind_speed_avg
+  #   source_id: wind_speed
+  #   unit_of_measurement: 'm/s'
+  #   filters:
+  #     - throttle_average: 5s  
     
-  - platform: copy
-    name: '${friendly_name} wind speed (km/h)'
-    id: wind_speed_kmh
-    source_id: wind_speed
-    unit_of_measurement: 'km/h'
-    icon: 'mdi:weather-windy'
-    filters:
-      - multiply: 3.6
+  # - platform: copy
+  #   name: '${friendly_name} wind speed (km/h)'
+  #   id: wind_speed_kmh
+  #   source_id: wind_speed
+  #   unit_of_measurement: 'km/h'
+  #   icon: 'mdi:weather-windy'
+  #   filters:
+  #     - multiply: 3.6
 
-  - platform: copy
-    name: '${friendly_name} wind speed 5s average (km/h)'
-    icon: 'mdi:weather-windy'
-    id: wind_speed_kmh_avg
-    source_id: wind_speed_avg
-    unit_of_measurement: 'km/h'
-    filters:
-      - multiply: 3.6
+  # - platform: copy
+  #   name: '${friendly_name} wind speed 5s average (km/h)'
+  #   icon: 'mdi:weather-windy'
+  #   id: wind_speed_kmh_avg
+  #   source_id: wind_speed_avg
+  #   unit_of_measurement: 'km/h'
+  #   filters:
+  #     - multiply: 3.6
 
   # RAIN GAUGE #######################################################
   - platform: pulse_counter
