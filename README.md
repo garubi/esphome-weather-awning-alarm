@@ -10,6 +10,8 @@ It is mostly borrowed code from the great work of:
 - https://github.com/devjklein/esphome-weatherstation/tree/main
 
 
+![Schematic](schematic.png)
+
 ##GPIO used
 
 - GPIO33 rain sensor analog _(see connection diagram [https://github.com/hugokernel/esphome-rain-detector/blob/master/images/circuit_rain_detector.png] )_
