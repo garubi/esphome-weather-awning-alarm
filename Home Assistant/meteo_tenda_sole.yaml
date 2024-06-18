@@ -1,0 +1,142 @@
+# A package for Home Assistant.
+# Put in packages/ folder
+
+#code mostly borrowed from: https://github.com/devjklein/esphome-weatherstation/blob/main/sensors.yaml
+
+#################################################################
+## Sensors
+#################################################################
+sensor:
+  - platform: statistics
+    name: Meteo Tenda Raffica 10m
+    entity_id: sensor.roof_windspeed_meter
+    state_characteristic: value_max
+    sampling_size: 9999
+    keep_last_sample: true
+    precision: 1
+    max_age:
+      minutes: 10
+  - platform: statistics
+    name: Meteo Tenda Raffica 1h
+    entity_id: sensor.roof_windspeed_meter
+    state_characteristic: value_max
+    sampling_size: 9999
+    keep_last_sample: true
+    precision: 1
+    max_age:
+      hours: 1
+  - platform: statistics
+    name: Meteo Tenda Raffica 24h
+    entity_id: sensor.roof_windspeed_meter
+    state_characteristic: value_max
+    sampling_size: 9999
+    keep_last_sample: true
+    precision: 1
+    max_age:
+      hours: 24
+
+  - platform: statistics
+    name: Meteo Tenda Vento Media 1h 
+    entity_id: sensor.roof_windspeed_meter
+    state_characteristic: average_linear
+    sampling_size: 9999
+    keep_last_sample: true
+    precision: 1
+    max_age:
+      hours: 1
+  - platform: statistics
+    name: Meteo Tenda Vento Media 10m
+    entity_id: sensor.roof_windspeed_meter
+    state_characteristic: average_linear
+    sampling_size: 9999
+    precision: 1
+    max_age:
+      minutes: 10
+
+  - platform: statistics
+    name: Meteo Tenda Pioggia Ultima ora (conteggio)
+    unique_id: sensor.roof_rainfall_last_hour_count
+    entity_id: sensor.roof_total_rainfall
+    state_characteristic: count
+    keep_last_sample: false
+    sampling_size: 999
+    precision: 4
+    max_age:
+      hours: 1
+  - platform: statistics
+    name: Meteo Tenda Pioggia Ultime 24 Ore (conteggio)
+    unique_id: sensor.roof_rainfall_last_24_hours_count
+    entity_id: sensor.roof_total_rainfall
+    state_characteristic: count
+    keep_last_sample: false
+    sampling_size: 999
+    precision: 4
+    max_age:
+      hours: 24
+
+
+## By Stefano ####################
+# - platform: statistics
+#   name: "Wind speed media 5 minuti"
+#   entity_id: sensor.meteo_tenda_meteo_tenda_wind_speed_km_h
+#   unique_id: tenda_sole_wind_mean_5min
+#   state_characteristic: mean
+#   sampling_size: 125
+#   precision: 1
+#   max_age:
+#     minutes: 5
+# - platform: statistics
+#   name: "Wind speed media 1 minuto"
+#   entity_id: sensor.meteo_tenda_meteo_tenda_wind_speed_km_h
+#   unique_id: tenda_sole_wind_mean_1min
+#   state_characteristic: mean
+#   sampling_size: 12
+#   precision: 1
+#   max_age:
+#     minutes: 1
+# - platform: statistics
+#   name: "Wind raffica più forte 4 ore"
+#   entity_id: sensor.meteo_tenda_meteo_tenda_wind_speed_km_h
+#   unique_id: tenda_sole_wind_gust_4ore
+#   state_characteristic: value_max
+#   sampling_size: 5760
+#   precision: 1
+#   max_age:
+#     hours: 4
+# - platform: statistics
+#   name: "Conta picchi vento 30 sec"
+#   entity_id: binary_sensor.vento_forte_per_tenda
+#   unique_id: tenda_sole_wind_peak_cunt_30s
+#   state_characteristic: count_on
+#   max_age:
+#     seconds: 30    
+
+#################################################################
+## Templates
+#################################################################
+
+template: 
+  - sensor:
+    - name: Meteo Tenda Pioggia Ultima ora 
+      icon: mdi:beaker-outline
+      unit_of_measurement: mm
+      state_class: total_increasing
+      unique_id: roof_rainfall_last_hour
+      state: >-
+        {% set count = states('sensor.roof_rainfall_last_hour_count') | int(0) %}
+        {% set in = count * 0.0204 %}
+        {% if count >= 0 %}
+          {{in|round(4, 'floor') }}
+        {% endif %}
+        
+    - name: Meteo Tenda Pioggia Ultime 24 Ore
+      icon: mdi:beaker-outline
+      unit_of_measurement: mm
+      state_class: total_increasing
+      unique_id: roof_rainfall_last_24_hours
+      state: >-
+        {% set count = states('sensor.roof_rainfall_last_24_hours_count') | int(0) %}
+        {% set in = count * 0.0204 %}
+        {% if count >= 0 %}
+          {{in|round(4, 'floor') }}
+        {% endif %}

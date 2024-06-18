@@ -31,13 +31,28 @@ dallas:
   - pin: GPIO32
 
 sensor:
+
+# ==============================================================================
+# Misc Sensors
+# ==============================================================================
+
+  - platform: wifi_signal
+    name: ${loc} Signal
+    update_interval: 60s
+    
+    # Allows the rainfall to be changed or reset from the frontend if necessary.
+  - platform: homeassistant
+    id: total_daily_rainfall_adjustment
+    internal: true
+    entity_id: input_number.roof_total_daily_rainfall_adjustment
+    accuracy_decimals: 2
+
 # ------------------------------------------------------------------------------
 # Temperature
 # ------------------------------------------------------------------------------
   - platform: dallas
     address: 0xf301205f5f377328
     name: "Temperature"
-
 # ------------------------------------------------------------------------------
 # Wind Speed
 # ------------------------------------------------------------------------------
@@ -108,51 +123,147 @@ sensor:
   #   filters:
   #     - multiply: 3.6
 
-  # RAIN GAUGE #######################################################
-  - platform: pulse_counter
+# ------------------------------------------------------------------------------
+# Rainfall
+# ------------------------------------------------------------------------------
+
+  - platform: pulse_meter
     pin:
       number: GPIO14
       mode: INPUT_PULLUP
-    unit_of_measurement: 'mm'
-    name: "${friendly_name} rain gauge"
-    icon: 'mdi:weather-rainy'
-    id: rain_gauge
-    internal: true
-    count_mode:
-      rising_edge: DISABLE
-      falling_edge: INCREMENT
-    internal_filter: 13us
-    update_interval: 60s
+    name: "${loc} Rainfall Per Hour"
+    id: rain_meter
+    icon: "mdi:weather-rainy"
+    internal_filter: 500ms
+    timeout: 45min
+    device_class: "precipitation_intensity"
+    state_class: "total_increasing"
+    unit_of_measurement: "mm/h"
+    accuracy_decimals: 2
     filters:
-      # Each 0.011" (0.2794mm) of rain causes one momentary contact closure
-      - multiply: 0.2794
+      - multiply: 1.224 # Calibration, 0.0204 * 60 for pulses/hour
+    total:
+      name: "${loc} Total Daily Rainfall"
+      id: total_daily_rainfall
+      icon: "mdi:beaker-outline"
+      device_class: "precipitation"
+      state_class: "total_increasing"
+      unit_of_measurement: "mm"
+      accuracy_decimals: 4
+      filters:
+      - multiply: 0.0204 # Calibration
+      on_value: 
+        then:
+          # Only increment total_rainfall_counter on rain (not on reset at midnight)
+          - lambda: |-
+              if (id(total_daily_rainfall).state != 0) {
+                id(total_rainfall_counter) += 1; 
+              }
+          - sensor.template.publish:
+              id: total_rainfall
+              state: !lambda 'return id(total_rainfall_counter);'
+
+  - platform: template
+    name: "${loc} Total Rainfall"
+    id: total_rainfall
+    update_interval: never
+    unit_of_measurement: "in"
+    icon: "mdi:beaker-outline"
+    device_class: "precipitation"
+    state_class: "total_increasing"
     accuracy_decimals: 4
-
-  - platform: integration
-    name: "${friendly_name} rainfall per min"
-    id: rain_per_min
-    time_unit: min
-    unit_of_measurement: 'mm'
-    icon: 'mdi:weather-rainy'
-    sensor: rain_gauge
-
-  - platform: total_daily_energy
-    name: "${friendly_name} total daily rain"
-    power_id: rain_gauge
-    unit_of_measurement: 'mm'
-    icon: 'mdi:weather-rainy'
-    # x60 To convert to aggregated rain amount
+    # Will output total amount of rain over the uptime of the sensor
+    # but we use the count in Home Assistant to get statistics
     filters:
-      - multiply: 60
+      - multiply: 0.0204
+
+  # RAIN GAUGE #######################################################
+#   - platform: pulse_counter
+#     pin:
+#       number: GPIO14
+#       mode: INPUT_PULLUP
+#     unit_of_measurement: 'mm'
+#     name: "${friendly_name} rain gauge"
+#     icon: 'mdi:weather-rainy'
+#     id: rain_gauge
+#     internal: true
+#     count_mode:
+#       rising_edge: DISABLE
+#       falling_edge: INCREMENT
+#     internal_filter: 13us
+#     update_interval: 60s
+#     filters:
+#       # Each 0.011" (0.2794mm) of rain causes one momentary contact closure
+#       - multiply: 0.2794
+#     accuracy_decimals: 4
+
+#   - platform: integration
+#     name: "${friendly_name} rainfall per min"
+#     id: rain_per_min
+#     time_unit: min
+#     unit_of_measurement: 'mm'
+#     icon: 'mdi:weather-rainy'
+#     sensor: rain_gauge
+
+#   - platform: total_daily_energy
+#     name: "${friendly_name} total daily rain"
+#     power_id: rain_gauge
+#     unit_of_measurement: 'mm'
+#     icon: 'mdi:weather-rainy'
+#     # x60 To convert to aggregated rain amount
+#     filters:
+#       - multiply: 60
       
-interval:
-  - interval: 60s
-    then:
-      - sensor.integration.reset: rain_per_min
+# interval:
+#   - interval: 60s
+#     then:
+#       - sensor.integration.reset: rain_per_min
 
 # Enable time component to reset energy at midnight
   # if you use a static IP (i.e. static_ip), be sure tu set the DNS address too (is usually the same as the gateway) dns1: XXX.XXX.XXX.XXX : 
   # it's essential for the Time sntp component to run
+# time:
+#   - platform: sntp
+#     timezone: "Europe/Rome"
+# ==============================================================================
+# Buttons Configuration
+# ==============================================================================
+
+button:
+  - platform: template
+    name: "${loc} Reset Total Daily Rainfall"
+    icon: "mdi:beaker-remove-outline"
+    on_press:
+      then:
+        - pulse_meter.set_total_pulses:
+              id: rain_meter
+              value: 0
+  - platform: template
+    name: "${loc} Apply Total Daily Rainfall Adjustment"
+    icon: "mdi:beaker-check-outline"
+    on_press:
+      then:
+        - logger.log:
+            format: "Adjustment: %.2f"
+            args: [ 'id(total_daily_rainfall_adjustment).state' ]
+        - pulse_meter.set_total_pulses:
+              id: rain_meter
+              value: !lambda 'return id(total_daily_rainfall_adjustment).state / 0.0204;' # rainfall/calibration to set this to total number of pulses
+    
 time:
-  - platform: sntp
-    timezone: "Europe/Rome"
+  - platform: homeassistant
+    id: esptime
+    on_time:
+      - seconds: 0
+        minutes: 0
+        hours: 0
+        then:
+          - pulse_meter.set_total_pulses:
+              id: rain_meter
+              value: 0
+              
+globals:
+   # Total runnning rainfall counter
+ - id: total_rainfall_counter
+   type: int
+   initial_value: '0'
