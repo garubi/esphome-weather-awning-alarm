@@ -21,3 +21,9 @@ Best to measure yours independently, though, just in case there's more than one 
 
 Also, it's important that this type of rain gauge be mounted perfectly level, clear of any trees, buildings etc. 
 and close to 5ft / 1.5m height to be in agreement with usual meteorological standards.
+
+# More detailed advice
+[instructable](https://www.calctool.org/other/rainfall-volume)
+
+# Automatic calculator
+[Rainfall Calculator](https://www.calctool.org/other/rainfall-volume)
