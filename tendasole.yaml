@@ -1,12 +1,15 @@
 substitutions:
-  name: meteotendasole-2-0
-  friendly_name: "Meteo Tenda"
-  loc: "Roof"
+  name: meteotendasole
+  friendly_name: "Stazione Meteo Tenda"
+  rain_gauge_calibration: "0.30303"
 
 esphome:
   name: $name
   friendly_name: $friendly_name
-
+  comment: "Anemometer and other sensors mostly for awning retract when there's strong wind or it's raining"
+  project:
+      name: "garubi.meteo_tenda_sole"
+      version: "2.0.0"
 esp32:
   board: esp32dev
   framework:
@@ -37,14 +40,17 @@ sensor:
 # ==============================================================================
 
   - platform: wifi_signal
-    name: ${loc} Signal
+    name: ${friendly_name} WiFi Signal
     update_interval: 60s
-    
+    entity_category: "diagnostic"
+    device_class: "signal_strength"
+    state_class: "measurement"
+
     # Allows the rainfall to be changed or reset from the frontend if necessary.
   - platform: homeassistant
     id: total_daily_rainfall_adjustment
     internal: true
-    entity_id: input_number.roof_total_daily_rainfall_adjustment
+    entity_id: input_number.total_daily_rainfall_adjustment
     accuracy_decimals: 2
 
 # ------------------------------------------------------------------------------
@@ -52,17 +58,25 @@ sensor:
 # ------------------------------------------------------------------------------
   - platform: dallas
     address: 0xf301205f5f377328
-    name: "Temperature"
+    name: Temperatura
+    state_class: "measurement"
+    device_class: "temperature"
+
+
 # ------------------------------------------------------------------------------
 # Wind Speed
 # ------------------------------------------------------------------------------
+  # Anemometer circumference in meter: radius (meters) * 2 * 3.14 = 0.05 * 2 * 3.14 = 0,314 m
+  # Rotations per seconds: pulses /60 (this is because the pulse_meter counts the pulses in one minute)
+  # Wind speed (meters per second): Circumference in meter * Rotations per seconds = 0,314 / 60 * pulses =
+  # Multiply factor (meters per second)= Circumference in meter / 60 
   - platform: pulse_meter
     pin: 
       number: GPIO13
       mode: INPUT_PULLUP
-    name: '${loc} Windspeed Meter'
+    name: 'Vento (m/s)'
+    id: meteo_tenda_vento
     icon: 'mdi:weather-windy'
-    id: wind_meter
     device_class: "wind_speed"
     state_class: "measurement"
     unit_of_measurement: 'm/s'
@@ -76,52 +90,16 @@ sensor:
                              # https://www.wxforum.net/index.php?topic=41489.0
     # internal_filter: 13us
 
-  # ANEMOMETER #######################################################
-  # Circumference in meter: radius (meters ) * 2 * 3.14 = 0.05 * 2 * 3.14 = 0,314 m
-  # Rotations per seconds: pulses /60 (this is because the pulse_meter counts the pulses in one minute)
-  # Wind speed (meters per second): Circumference in meter * Rotations per seconds = 0,314 / 60 * pulses = 
-  # - platform: pulse_meter
-  #   pin:
-  #     number: GPIO13
-  #     mode: INPUT_PULLUP
-  #   id: wind_speed
-  #   unit_of_measurement: 'm/s'
-  #   name: '${friendly_name} wind speed (m/s)'
-  #   icon: 'mdi:weather-windy'
-  #   internal_filter: 13us
-  #   timeout: 5s
-  #   filters:
-  #     - multiply: 0.005233333
-  #     - sliding_window_moving_average:
-  #         window_size: 10
-  #         send_every: 5
-
-  # - platform: copy
-  #   name: '${friendly_name} wind speed 5s average  (m/s)'
-  #   icon: 'mdi:weather-windy'
-  #   id: wind_speed_avg
-  #   source_id: wind_speed
-  #   unit_of_measurement: 'm/s'
-  #   filters:
-  #     - throttle_average: 5s  
-    
-  # - platform: copy
-  #   name: '${friendly_name} wind speed (km/h)'
-  #   id: wind_speed_kmh
-  #   source_id: wind_speed
-  #   unit_of_measurement: 'km/h'
-  #   icon: 'mdi:weather-windy'
-  #   filters:
-  #     - multiply: 3.6
-
-  # - platform: copy
-  #   name: '${friendly_name} wind speed 5s average (km/h)'
-  #   icon: 'mdi:weather-windy'
-  #   id: wind_speed_kmh_avg
-  #   source_id: wind_speed_avg
-  #   unit_of_measurement: 'km/h'
-  #   filters:
-  #     - multiply: 3.6
+  - platform: copy
+    name: 'Vento (km/h)'
+    id: wind_speed_kmh
+    source_id: meteo_tenda_vento
+    unit_of_measurement: 'km/h'
+    icon: 'mdi:weather-windy'
+    device_class: "wind_speed"
+    state_class: "measurement"
+    filters:
+      - multiply: 3.6 # m/s to Km/h
 
 # ------------------------------------------------------------------------------
 # Rainfall
@@ -131,32 +109,33 @@ sensor:
     pin:
       number: GPIO14
       mode: INPUT_PULLUP
-    name: "${loc} Rainfall Per Hour"
+    name: "Pioggia per ora"
     id: rain_meter
     icon: "mdi:weather-rainy"
     internal_filter: 500ms
     timeout: 45min
     device_class: "precipitation_intensity"
-    state_class: "total_increasing"
+    state_class: "measurement"
     unit_of_measurement: "mm/h"
     accuracy_decimals: 2
     filters:
-      - multiply: 1.224 # Calibration, 0.0204 * 60 for pulses/hour
+      # - multiply: 1.224 # Calibration, 0.0204 * 60 for pulses/hour
+      - lambda: return x = ${rain_gauge_calibration} * 60 # Calibration, 0.0204 * 60 for pulses/hour
     total:
-      name: "${loc} Total Daily Rainfall"
-      id: total_daily_rainfall
+      name: "Pioggia giornaliera totale"
+      id: pioggia_giornaliera_totale
       icon: "mdi:beaker-outline"
       device_class: "precipitation"
       state_class: "total_increasing"
       unit_of_measurement: "mm"
       accuracy_decimals: 4
       filters:
-      - multiply: 0.0204 # Calibration
+      - multiply: ${rain_gauge_calibration} # Calibration
       on_value: 
         then:
           # Only increment total_rainfall_counter on rain (not on reset at midnight)
           - lambda: |-
-              if (id(total_daily_rainfall).state != 0) {
+              if (id(pioggia_giornaliera_totale).state != 0) {
                 id(total_rainfall_counter) += 1; 
               }
           - sensor.template.publish:
@@ -164,10 +143,10 @@ sensor:
               state: !lambda 'return id(total_rainfall_counter);'
 
   - platform: template
-    name: "${loc} Total Rainfall"
+    name: "Pioggia Totale (dall'uptime)"
     id: total_rainfall
     update_interval: never
-    unit_of_measurement: "in"
+    unit_of_measurement: "mm"
     icon: "mdi:beaker-outline"
     device_class: "precipitation"
     state_class: "total_increasing"
@@ -175,49 +154,55 @@ sensor:
     # Will output total amount of rain over the uptime of the sensor
     # but we use the count in Home Assistant to get statistics
     filters:
-      - multiply: 0.0204
+      - multiply: ${rain_gauge_calibration}
 
-  # RAIN GAUGE #######################################################
-#   - platform: pulse_counter
-#     pin:
-#       number: GPIO14
-#       mode: INPUT_PULLUP
-#     unit_of_measurement: 'mm'
-#     name: "${friendly_name} rain gauge"
-#     icon: 'mdi:weather-rainy'
-#     id: rain_gauge
-#     internal: true
-#     count_mode:
-#       rising_edge: DISABLE
-#       falling_edge: INCREMENT
-#     internal_filter: 13us
-#     update_interval: 60s
-#     filters:
-#       # Each 0.011" (0.2794mm) of rain causes one momentary contact closure
-#       - multiply: 0.2794
-#     accuracy_decimals: 4
+  # RAIN GAUGE old style (garubi) #######################################################
+  - platform: pulse_counter
+    pin:
+      number: GPIO14
+      mode: INPUT_PULLUP
+    unit_of_measurement: 'mm'
+    device_class: "precipitation"
+    state_class: "measurement"
+    name: "OLD rain gauge"
+    icon: 'mdi:weather-rainy'
+    id: rain_gauge
+    internal: true
+    count_mode:
+      rising_edge: DISABLE
+      falling_edge: INCREMENT
+    internal_filter: 13us
+    update_interval: 60s
+    filters:
+      # Each 0.011" (0.2794mm - ${rain_gauge_calibration} ) of rain causes one momentary contact closure
+      - multiply: ${rain_gauge_calibration}
+    accuracy_decimals: 4
 
-#   - platform: integration
-#     name: "${friendly_name} rainfall per min"
-#     id: rain_per_min
-#     time_unit: min
-#     unit_of_measurement: 'mm'
-#     icon: 'mdi:weather-rainy'
-#     sensor: rain_gauge
+  - platform: integration
+    name: "OLD rainfall per min"
+    id: rain_per_min
+    time_unit: min
+    unit_of_measurement: 'mm'
+    icon: 'mdi:weather-rainy'
+    device_class: "precipitation"
+    state_class: "measurement"
+    sensor: rain_gauge
 
-#   - platform: total_daily_energy
-#     name: "${friendly_name} total daily rain"
-#     power_id: rain_gauge
-#     unit_of_measurement: 'mm'
-#     icon: 'mdi:weather-rainy'
-#     # x60 To convert to aggregated rain amount
-#     filters:
-#       - multiply: 60
+  - platform: total_daily_energy
+    name: "OLD total daily rain"
+    power_id: rain_gauge
+    unit_of_measurement: 'mm'
+    icon: 'mdi:weather-rainy'
+    device_class: "precipitation"
+    state_class: "total_increasing"
+    # x60 To convert to aggregated rain amount
+    filters:
+      - multiply: 60
       
-# interval:
-#   - interval: 60s
-#     then:
-#       - sensor.integration.reset: rain_per_min
+interval:
+  - interval: 60s
+    then:
+      - sensor.integration.reset: rain_per_min
 
 # Enable time component to reset energy at midnight
   # if you use a static IP (i.e. static_ip), be sure tu set the DNS address too (is usually the same as the gateway) dns1: XXX.XXX.XXX.XXX : 
@@ -225,13 +210,14 @@ sensor:
 # time:
 #   - platform: sntp
 #     timezone: "Europe/Rome"
+
 # ==============================================================================
 # Buttons Configuration
 # ==============================================================================
 
 button:
   - platform: template
-    name: "${loc} Reset Total Daily Rainfall"
+    name: "${friendly_name} Reset Pioggia totale giornaliera"
     icon: "mdi:beaker-remove-outline"
     on_press:
       then:
@@ -239,7 +225,7 @@ button:
               id: rain_meter
               value: 0
   - platform: template
-    name: "${loc} Apply Total Daily Rainfall Adjustment"
+    name: "${friendly_name} Aggiusta Pioggia totale giornaliera "
     icon: "mdi:beaker-check-outline"
     on_press:
       then:
