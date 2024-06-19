@@ -92,7 +92,7 @@ template:
       unique_id: roof_rainfall_last_hour
       state: >-
         {% set count = states('sensor.meteo_tenda_pioggia_ultima_ora_conteggio') | int(0) %}
-        {% set in = count * 0.0204 %}
+        {% set in = count * 0.30303 %}
         {% if count >= 0 %}
           {{in|round(4, 'floor') }}
         {% endif %}
@@ -104,7 +104,7 @@ template:
       unique_id: roof_rainfall_last_24_hours
       state: >-
         {% set count = states('sensor.meteo_tenda_pioggia_ultime_24_ore_conteggio') | int(0) %}
-        {% set in = count * 0.0204 %}
+        {% set in = count * 0.30303 %}
         {% if count >= 0 %}
           {{in|round(4, 'floor') }}
         {% endif %}
