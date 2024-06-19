@@ -121,6 +121,8 @@ sensor:
     filters:
       # - multiply: 1.224 # Calibration, 0.0204 * 60 for pulses/hour
       - lambda: return x = ${rain_gauge_calibration} * 60 # Calibration, 0.0204 * 60 for pulses/hour
+      # - multiply: ${rain_gauge_calibration} # calibration
+
     total:
       name: "Pioggia giornaliera totale"
       id: pioggia_giornaliera_totale
