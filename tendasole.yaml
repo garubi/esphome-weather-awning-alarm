@@ -109,19 +109,19 @@ sensor:
     pin:
       number: GPIO14
       mode: INPUT_PULLUP
-    name: "Pioggia per ora"
+    name: "Pioggia (pulse_meter)"
     id: rain_meter
     icon: "mdi:weather-rainy"
     internal_filter: 500ms
     timeout: 45min
     device_class: "precipitation_intensity"
     state_class: "measurement"
-    unit_of_measurement: "mm/h"
+    unit_of_measurement: "mm/m"
     accuracy_decimals: 2
     filters:
       # - multiply: 1.224 # Calibration, 0.0204 * 60 for pulses/hour
-      - lambda: return x = ${rain_gauge_calibration} * 60 # Calibration, 0.0204 * 60 for pulses/hour
-      # - multiply: ${rain_gauge_calibration} # calibration
+      # - lambda: return x = ${rain_gauge_calibration} * 60; # Calibration, 0.0204 * 60 for pulses/hour
+      - multiply: ${rain_gauge_calibration} # calibration
 
     total:
       name: "Pioggia giornaliera totale"
@@ -163,27 +163,47 @@ sensor:
     pin:
       number: GPIO14
       mode: INPUT_PULLUP
-    unit_of_measurement: 'mm'
+    unit_of_measurement: 'mm/min'
     device_class: "precipitation"
     state_class: "measurement"
     name: "OLD rain gauge"
     icon: 'mdi:weather-rainy'
     id: rain_gauge
-    internal: true
-    count_mode:
-      rising_edge: DISABLE
-      falling_edge: INCREMENT
+    internal: false
+    # count_mode:
+    #   rising_edge: DISABLE
+    #   falling_edge: INCREMENT
     internal_filter: 13us
     update_interval: 60s
     filters:
       # Each 0.011" (0.2794mm - ${rain_gauge_calibration} ) of rain causes one momentary contact closure
       - multiply: ${rain_gauge_calibration}
     accuracy_decimals: 4
+    total:
+      name: "Old rain gauge TOTAL"
+      id: rain_gauge_total
+      unit_of_measurement: 'mm'
+      device_class: "precipitation"
+      state_class: "total_increasing"
+      accuracy_decimals: 4
+      filters:
+      # Each 0.011" (0.2794mm - ${rain_gauge_calibration} ) of rain causes one momentary contact closure
+      - multiply: ${rain_gauge_calibration}
 
   - platform: integration
     name: "OLD rainfall per min"
     id: rain_per_min
     time_unit: min
+    unit_of_measurement: 'mm'
+    icon: 'mdi:weather-rainy'
+    device_class: "precipitation"
+    state_class: "measurement"
+    sensor: rain_gauge
+
+  - platform: integration
+    name: "OLD rainfall per hour"
+    id: rain_per_hour
+    time_unit: h
     unit_of_measurement: 'mm'
     icon: 'mdi:weather-rainy'
     device_class: "precipitation"
