@@ -2,6 +2,10 @@ substitutions:
   name: meteotendasole
   friendly_name: "Stazione Meteo Tenda"
   rain_gauge_calibration: "0.30303"
+  update_fq: 25s
+  battery_full: '3.16'
+  battery_empty: '2.492'
+  battery_diff: '0.668' # '${battery_full}-${battery_empty}'
 
 esphome:
   name: $name
@@ -39,6 +43,35 @@ sensor:
 # Misc Sensors
 # ==============================================================================
 
+# ADC platform helps track status of battery
+  - platform: adc
+    pin: GPIO34
+    name: '${friendly_name} Batteria'
+    unit_of_measurement: "V"
+    icon: "mdi:battery-high"
+    entity_category: "diagnostic"    
+    device_class: "voltage"
+    state_class: "measurement"
+    accuracy_decimals: 3
+    attenuation: 11db
+    id: voltage
+#    update_interval: 25s
+
+# Another ADC platform to track battery %
+  - platform: adc
+    pin: GPIO34
+    name: '${friendly_name} Batteria %'
+    entity_category: "diagnostic"    
+    device_class: "voltage"
+    state_class: "measurement"
+    attenuation: 11db
+    unit_of_measurement: '%'
+    filters:
+      - lambda: |-
+          return ((id(voltage).state - 2.492) / 0.668 * 100.00);  
+#          return ((id(voltage).state - ${battery_empty}) / ${battery_diff} * 100.00);  
+
+    update_interval: ${update_fq}
   - platform: wifi_signal
     name: ${friendly_name} WiFi Signal
     update_interval: 60s
@@ -52,6 +85,7 @@ sensor:
     internal: true
     entity_id: input_number.total_daily_rainfall_adjustment
     accuracy_decimals: 2
+
 
 # ------------------------------------------------------------------------------
 # Temperature
